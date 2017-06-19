@@ -1,0 +1,5 @@
+/.idea/
+/temp/
+__pycache__/
+test.py
+setup.py
