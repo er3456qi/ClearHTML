@@ -3,7 +3,7 @@
 Short to say, it's a tool to filter html tag's attributes
 and get a structured object about this html document.
 
-####example
+#### example
 
 If you have a html document string like this:
 
@@ -116,7 +116,7 @@ and  `truck['tags']`:
 ]
 ```
 
-####specifically
+#### specifically
 
 ```python
 truck = {
@@ -147,8 +147,6 @@ truck['tags']['attr'] = ['attr1="value1"', 'attr2="value2"', ...]
 
 truck['tags']['content'] = ['text content', '', 'empty string is a', '', 'slot', '', 'for tag']
 ```
-
-`truck['tags']['content']` 's detail:
 
 A `truck['tags']` like this:
 
