@@ -1,4 +1,4 @@
-def get_attr(attr_list, condition):
+def __get_attr(attr_list, condition):
     """
     get a tag's attr from a list with a condition
     :return: an attribute string if the condition is satisfied
@@ -9,7 +9,7 @@ def get_attr(attr_list, condition):
     return ''
 
 
-def special_tag_check(worker, truck):
+def __special_tag_check(worker, truck):
     """
     check some special tags which must have attribute
     at here, they are 'img', 'a', 'svg', 'path', you can add more
@@ -17,22 +17,22 @@ def special_tag_check(worker, truck):
     name, attr = worker['cur_name'], worker['cur_attr']
     addition = '>'
     if name == 'img':
-        addition = get_attr(attr, 'src=') + '>'
+        addition = __get_attr(attr, 'src=') + '>'
     elif name == 'a':
-        addition = get_attr(attr, 'href=') + '>'
+        addition = __get_attr(attr, 'href=') + '>'
     elif name == 'svg':
         addition = ' ' + ' '.join(attr) + '>'
     elif name == 'path':
-        addition = get_attr(attr, 'd=') + '>'
+        addition = __get_attr(attr, 'd=') + '>'
     truck['page']['content'] += addition
 
 
-def got_tag(worker, truck):
+def __got_start_tag(worker, truck):
     """
     got a tag.
     """
     worker['state'] = 0
-    special_tag_check(worker, truck)
+    __special_tag_check(worker, truck)
     name, attr = worker['cur_name'], worker['cur_attr']
     worker['cur_name'], worker['cur_attr'] = '', []
     tag_content_left_index = worker['start_at']
@@ -41,17 +41,19 @@ def got_tag(worker, truck):
         'name': name,  # tag name
         'attr': attr,  # tag's attribute
         'children_count': 0,  # tag's children count
-        'index': [tag_content_left_index],  # tag's content index in truck['page']
-        'content': ['']  # content blocks, '' if the part is tag.
+        'index': [tag_content_left_index],  # tag's content index in truck['page'], is a list which contain two element
+        'content': ['']  # content blocks, '' if the part(block) is tag.
     }
     truck['tags'].append(t)
 
     # count and record tag's children
     if worker['tag_stack']:
         worker['tag_stack'][-1]['children_count'] += 1
+        # first '' is sub tag which in this tag content, use '' instead,
+        # second '' is next part of the content, use when get no-tag
         worker['tag_stack'][-1]['content'].extend(['', ''])
 
-    # record tags distribution
+    # record tags location
     if truck['page']['tag_location'].get(name) is None:
         truck['page']['tag_location'][name] = []
     place = len(truck['tags']) - 1  # begin with 0
@@ -66,7 +68,7 @@ def got_tag(worker, truck):
         worker['tag_stack'].append(t)
 
 
-def left_a_tag(worker, truck):
+def __left_a_tag(worker, truck):
     """
     left tag. reset and record something.
     """
@@ -76,7 +78,7 @@ def left_a_tag(worker, truck):
     t['index'].append(tag_content_right_index)
 
 
-def got_else(worker, truck):
+def __got_else(worker, truck):
     """
     got something unexpected
     """
@@ -86,7 +88,7 @@ def got_else(worker, truck):
     truck['page']['content'] += worker['cur_char']
 
 
-def state10(worker, truck):
+def __state10(worker, truck):
     """
     got '<'
     """
@@ -99,12 +101,12 @@ def state10(worker, truck):
         worker['state'] = 40
         truck['page']['content'] += c
     else:
-        got_else(worker, truck)
+        __got_else(worker, truck)
         return True
     return False
 
 
-def state11(worker, truck):
+def __state11(worker, truck):
     """
     got '<ta'
     """
@@ -121,15 +123,15 @@ def state11(worker, truck):
         worker['state'] = 13
     elif c == '>':
         # truck['page']['content'] += c  # move into got_tag(), The same bellow
-        got_tag(worker, truck)
+        __got_start_tag(worker, truck)
         return True
     else:
-        got_else(worker, truck)
+        __got_else(worker, truck)
         return True
     return False
 
 
-def state12(worker, truck):
+def __state12(worker, truck):
     """
     got '<tag#', such as <h1
     """
@@ -137,15 +139,15 @@ def state12(worker, truck):
     if c.isspace():
         worker['state'] = 13
     elif c == '>':
-        got_tag(worker, truck)
+        __got_start_tag(worker, truck)
         return True
     else:
-        got_else(worker, truck)
+        __got_else(worker, truck)
         return True
     return False
 
 
-def state13(worker, truck):
+def __state13(worker, truck):
     """
     got '<tag ' or '<tag# '
     """
@@ -160,28 +162,28 @@ def state13(worker, truck):
         worker['state'] = 20
         truck['page']['content'] += c
     elif c == '>':
-        got_tag(worker, truck)
+        __got_start_tag(worker, truck)
         return True
     else:
-        got_else(worker, truck)
+        __got_else(worker, truck)
         return True
     return False
 
 
-def state20(worker, truck):
+def __state20(worker, truck):
     """
     got '<tag.../'
     """
     c = worker['cur_char']
     if c == '>':
-        got_tag(worker, truck)
+        __got_start_tag(worker, truck)
         return True
     else:
-        got_else(worker, truck)
+        __got_else(worker, truck)
         return True
 
 
-def state30(worker, truck):
+def __state30(worker, truck):
     """
     got '<tag... att'
     """
@@ -193,12 +195,12 @@ def state30(worker, truck):
         worker['state'] = 31
         worker['cur_attr'][-1] += c
     else:
-        got_else(worker, truck)
+        __got_else(worker, truck)
         return True
     return False
 
 
-def state31(worker, truck):
+def __state31(worker, truck):
     """
     got '<tag... attr='
     """
@@ -210,12 +212,12 @@ def state31(worker, truck):
         worker['state'] = 33
         worker['cur_attr'][-1] += c
     else:
-        got_else(worker, truck)
+        __got_else(worker, truck)
         return True
     return False
 
 
-def state32(worker, truck):
+def __state32(worker, truck):
     """
     got '<tag... attr="va'
     """
@@ -229,7 +231,7 @@ def state32(worker, truck):
     return False
 
 
-def state33(worker, truck):
+def __state33(worker, truck):
     """
     got "<tag... attr='va"
     """
@@ -243,7 +245,7 @@ def state33(worker, truck):
     return False
 
 
-def state34(worker, truck):
+def __state34(worker, truck):
     """
     got '<tag... attr="value"' or "<tag... attr='value'"
     """
@@ -254,15 +256,15 @@ def state34(worker, truck):
         worker['state'] = 13
         truck['page']['content'] += c
     elif c == '>':
-        got_tag(worker, truck)
+        __got_start_tag(worker, truck)
         return True
     else:
-        got_else(worker, truck)
+        __got_else(worker, truck)
         return True
     return False
 
 
-def state40(worker, truck):
+def __state40(worker, truck):
     """
     got '</'
     """
@@ -271,11 +273,11 @@ def state40(worker, truck):
         worker['state'] = 41
         truck['page']['content'] += c
     else:
-        got_else(worker, truck)
+        __got_else(worker, truck)
         return True
 
 
-def state41(worker, truck):
+def __state41(worker, truck):
     """
     got '</ta'
     """
@@ -288,29 +290,29 @@ def state41(worker, truck):
         truck['page']['content'] += c
     elif c == '>':
         truck['page']['content'] += c
-        left_a_tag(worker, truck)
+        __left_a_tag(worker, truck)
         return True
     else:
-        got_else(worker, truck)
+        __got_else(worker, truck)
         return True
     return False
 
 
-def state42(worker, truck):
+def __state42(worker, truck):
     """
     got '</tag'
     """
     c = worker['cur_char']
     if c == '>':
         truck['page']['content'] += c
-        left_a_tag(worker, truck)
+        __left_a_tag(worker, truck)
         return True
     else:
-        got_else(worker, truck)
+        __got_else(worker, truck)
         return True
 
 
-def get_char(materials):
+def __get_char(materials):
     index = materials['index']
     materials['index'] += 1
     return materials['content'][index]
@@ -321,19 +323,19 @@ def clean(html_doc):
     parse html to a structured object
     """
     switch = {
-        10: state10,
-        11: state11,
-        12: state12,
-        13: state13,
-        20: state20,
-        30: state30,
-        31: state31,
-        32: state32,
-        33: state33,
-        34: state34,
-        40: state40,
-        41: state41,
-        42: state42,
+        10: __state10,
+        11: __state11,
+        12: __state12,
+        13: __state13,
+        20: __state20,
+        30: __state30,
+        31: __state31,
+        32: __state32,
+        33: __state33,
+        34: __state34,
+        40: __state40,
+        41: __state41,
+        42: __state42,
     }
     materials = {'content': html_doc, 'index': 0}
     single_tags = {"br", "img", "meta", "wbr", "embed", "input", "param", "hr", "link", "source"} # and more
@@ -355,13 +357,13 @@ def clean(html_doc):
     }
 
     while materials['index'] < len(html_doc):
-        worker['cur_char'] = get_char(materials)
+        worker['cur_char'] = __get_char(materials)
         if worker['cur_char'] == '<':  # tag maybe
             worker['state'] = 10  # start state with 10
             worker['start_at'] = len(truck['page']['content'])
             truck['page']['content'] += worker['cur_char']
             while materials['index'] < len(html_doc):
-                worker['cur_char'] = get_char(materials)
+                worker['cur_char'] = __get_char(materials)
                 is_break = switch[worker['state']](worker, truck)
                 if is_break:
                     break
